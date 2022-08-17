@@ -1,7 +1,95 @@
 import Head from "next/head";
 import Image from "next/image";
+import Die from "../components/Die";
+import { useEffect, useState } from "react";
+import { nanoid } from "nanoid";
+import Confetti from "react-confetti";
 
 export default function Home() {
+  const [initialDices, setInitialDices] = useState(allNewDice());
+  const [tenzies, setTenzies] = useState(false);
+
+  useEffect(() => {
+    const allHeld = initialDices.filter((item) => item.isHeld !== false);
+    const result = initialDices.every((item, index, arr) => {
+      if (index === 0) {
+        return true;
+      } else {
+        return item.value === arr[index - 1].value;
+      }
+    });
+
+    if (allHeld.length === 10 && result) {
+      setTenzies(true);
+      console.log("You won!");
+    }
+  }, [initialDices]);
+
+  function allNewDice() {
+    const isRandomNumberArray = [];
+    for (let i = 0; i < 10; i++) {
+      let randomNumber = Math.floor(Math.random() * 6) + 1;
+
+      isRandomNumberArray.push({
+        id: nanoid(),
+        value: randomNumber,
+        isHeld: false,
+      });
+    }
+
+    return isRandomNumberArray;
+  }
+
+  function newGame() {
+    setTenzies(false);
+    setInitialDices(allNewDice);
+  }
+
+  const placeDice = initialDices.map((dice, index) => {
+    return (
+      <Die
+        key={dice.id}
+        id={dice.id}
+        value={dice.value}
+        isHeld={dice.isHeld}
+        holdDice={holdDice}
+      />
+    );
+  });
+
+  function newDices() {
+    setInitialDices(() => {
+      return allNewDice();
+    });
+  }
+
+  function holdDice(id) {
+    setInitialDices((prevStates) => {
+      return prevStates.map((item) => {
+        return id === item.id
+          ? {
+              ...item,
+              isHeld: !item.isHeld,
+            }
+          : item;
+      });
+    });
+  }
+
+  function rollDice() {
+    setInitialDices((prevStates) => {
+      return prevStates.map((item) => {
+        return item.isHeld
+          ? item
+          : {
+              id: nanoid(),
+              value: Math.floor(Math.random() * 6) + 1,
+              isHeld: false,
+            };
+      });
+    });
+  }
+
   return (
     <div>
       <Head>
@@ -11,7 +99,25 @@ export default function Home() {
       </Head>
       <main>
         <div className="w-[50%] h-[89%] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 outer--border border-8 border-black bg-black">
-          <div className="w-[90%] h-[86%] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 outer--border border-8 border-black rounded-2xl box-content bg-gray-200"></div>
+          <div className="flex items-center justify-center w-[90%] h-[86%] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 outer--border border-8 border-black rounded-2xl box-content bg-gray-200">
+            <div className="flex h-full flex-col items-center justify-evenly">
+              <h1 className="text-7xl font-karla font-bold">Tenzies</h1>
+              <p className="text-3xl max-w-[40ch] text-center">
+                Roll until all dice are the same. Click each die to freeze it at
+                its current value between rolls.
+              </p>
+              <div className="grid grid-cols-5 grid-rows-2 gap-8 font-karla font-medium text-5xl">
+                {placeDice}
+              </div>
+              <button
+                onClick={tenzies ? newGame : rollDice}
+                className="bg-blue-600 px-24 py-6 text-6xl text-white rounded-xl font-karla font-medium roll-dice-active"
+              >
+                {tenzies ? "New Game" : "Roll"}
+              </button>
+              {tenzies ? <Confetti height={900} width={900} /> : ""}
+            </div>
+          </div>
         </div>
       </main>
     </div>
